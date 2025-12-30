@@ -24,7 +24,7 @@ jobs:
           ./build-tools/android-13/build-tools/34.0.0/apksigner verify --print-certs app.apk > signature.txt
 
       - name: Subir artifact con la firma
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Extract-APK-Signature
           path: signature.txt
