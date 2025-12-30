@@ -1,0 +1,33 @@
+name: Extract APK Signature
+
+on:
+  workflow_dispatch:   # lo puedes lanzar manualmente
+  push:
+    paths:
+      - "apks/*.apk"   # o ajusta la ruta según dónde subas el APK
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Descargar APK desde release
+        run: |
+          curl -L \
+          https://github.com/Jesusdio2/PrivateSignature/releases/download/Dev0/Google.Play.Store.40.0.13-23.0.PR.612537281.apk \
+          -o app.apk
+
+      - name: Instalar herramientas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apksigner unzip openjdk-17-jre-headless
+
+      - name: Verificar firma con apksigner
+        run: |
+          apksigner verify --print-certs app.apk
+
+      - name: Extraer CERT.RSA y analizar con keytool
+        run: |
+          unzip -p app.apk META-INF/CERT.RSA > CERT.RSA
+          keytool -printcert -file CERT.RSA
