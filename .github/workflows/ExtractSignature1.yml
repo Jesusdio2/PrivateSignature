@@ -1,33 +1,30 @@
 name: Extract APK Signature
 
 on:
-  workflow_dispatch:   # lo puedes lanzar manualmente
-  push:
-    paths:
-      - "apks/*.apk"   # o ajusta la ruta según dónde subas el APK
+  workflow_dispatch:   # lo lanzas manualmente desde la pestaña Actions
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
       - name: Descargar APK desde release
         run: |
-          curl -L \
-          https://github.com/Jesusdio2/PrivateSignature/releases/download/Dev0/Google.Play.Store.40.0.13-23.0.PR.612537281.apk \
-          -o app.apk
+          curl -L https://github.com/Jesusdio2/PrivateSignature/releases/download/Dev0/Google.Play.Store.40.0.13-23.0.PR.612537281.apk -o app.apk
 
-      - name: Instalar herramientas
+      - name: Instalar Android SDK Build Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y apksigner unzip openjdk-17-jre-headless
+          sudo apt-get install -y unzip openjdk-17-jre-headless
+          wget https://dl.google.com/android/repository/build-tools_r34.0.0-linux.zip -O build-tools.zip
+          unzip build-tools.zip -d build-tools
+          export PATH=$PWD/build-tools/android-13/build-tools/34.0.0:$PATH
 
-      - name: Verificar firma con apksigner
+      - name: Verificar firma con apksigner y guardar en archivo
         run: |
-          apksigner verify --print-certs app.apk
+          ./build-tools/android-13/build-tools/34.0.0/apksigner verify --print-certs app.apk > signature.txt
 
-      - name: Extraer CERT.RSA y analizar con keytool
-        run: |
-          unzip -p app.apk META-INF/CERT.RSA > CERT.RSA
-          keytool -printcert -file CERT.RSA
+      - name: Subir artifact con la firma
+        uses: actions/upload-artifact@v3
+        with:
+          name: Extract-APK-Signature
+          path: signature.txt
