@@ -9,22 +9,31 @@ jobs:
     steps:
       - name: Descargar APK desde release
         run: |
-          curl -L https://github.com/Jesusdio2/PrivateSignature/releases/download/Dev0/Google.Play.Store.40.0.13-23.0.PR.612537281.apk -o app.apk
+          curl -L https://github.com/Jesusdio2/PrivateSignature/releases/download/Dev0/Servicios.de.Google.Play.7.apk -o app.apk
 
-      - name: Instalar Android SDK Build Tools
+      - name: Instalar Android SDK y Build Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip openjdk-17-jre-headless
-          wget https://dl.google.com/android/repository/build-tools_r34.0.0-linux.zip -O build-tools.zip
-          unzip build-tools.zip -d build-tools
-          export PATH=$PWD/build-tools/android-13/build-tools/34.0.0:$PATH
+          sudo apt-get install -y wget unzip openjdk-17-jre-headless
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          unzip cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
+          export ANDROID_HOME=$HOME/android-sdk
+          export PATH=$ANDROID_HOME/cmdline-tools/bin:$PATH
+          yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "build-tools;34.0.0"
 
-      - name: Verificar firma con apksigner y guardar en archivo
+      - name: Extraer huella SHA-256 con apksigner
         run: |
-          ./build-tools/android-13/build-tools/34.0.0/apksigner verify --print-certs app.apk > signature.txt
+          $HOME/android-sdk/build-tools/34.0.0/apksigner verify --print-certs --verbose app.apk \
+            | grep 'SHA-256 digest:' \
+            | sed 's/.*SHA-256 digest: //' \
+            > fingerprint.txt
 
-      - name: Subir artifact con la firma
+      - name: Mostrar huella en logs
+        run: cat fingerprint.txt
+
+      - name: Subir artifact con la huella
         uses: actions/upload-artifact@v4
         with:
-          name: Extract-APK-Signature
-          path: signature.txt
+          name: APK-Certificate-Fingerprint
+          path: fingerprint.txt
